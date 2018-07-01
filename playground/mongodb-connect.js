@@ -14,16 +14,16 @@ MongoClient.connect('mongodb://localhost:27017/TodoApp', (err, client) => {
 
     const db = client.db('TodoApp');
 
-    // db.collection('Todos').insertOne({
-    //     text: 'Something to do',
-    //     completed: false
-    // }, (err, result) => {
-    //     if (err) {
-    //         console.log('Unable to insert todo', err);
-    //     }
+    db.collection('Todos').insertOne({
+        text: 'Buy grocessory',
+        completed: false
+    }, (err, result) => {
+        if (err) {
+            console.log('Unable to insert todo', err);
+        }
 
-    //     console.log(JSON.stringify(result, undefined, 2));
-    // });
+        console.log(JSON.stringify(result, undefined, 2));
+    });
 
 
     // db.collection('Users').insertOne({
@@ -37,7 +37,7 @@ MongoClient.connect('mongodb://localhost:27017/TodoApp', (err, client) => {
 
     //     console.log(JSON.stringify(result.ops, undefined, 2));
     // });
-    
+
 
     client.close();
 });
