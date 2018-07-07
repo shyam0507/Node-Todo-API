@@ -37,7 +37,7 @@ MongoClient.connect('mongodb://localhost:27017/TodoApp', (err, client) => {
         'text': 'Buy grocessory'
     }).then(result => {
 
-        console.log(result)
+        console.log(result);
 
     });
 
