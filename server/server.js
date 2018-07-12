@@ -100,6 +100,24 @@ app.get('/todo/:id', async (req, res) => {
 });
 
 
+app.delete('/todo/:id', async (req, res) => {
+
+    var id = req.params.id;
+
+    if (!ObjectID.isValid(id)) {
+        return res.status(404).send();
+    }
+
+    Todo.findByIdAndRemove(id).then(doc => {
+
+        if (!doc) {
+            return res.status(404).send();
+        }
+        return res.send(doc);
+    });
+
+});
+
 app.listen(3000, () => {
     console.log("Started on port 3000");
 });
