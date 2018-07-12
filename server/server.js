@@ -1,5 +1,6 @@
-var express = require('express');
-var bodyParser = require('body-parser');
+const express = require('express');
+const bodyParser = require('body-parser');
+const _ = require('lodash');
 
 var {
     ObjectID
@@ -121,6 +122,50 @@ app.delete('/todo/:id', async (req, res) => {
 
     } catch (error) {
         return res.status(404).send();
+    }
+
+});
+
+//Update the Todo
+app.patch('/todo/:id', async (req, res) => {
+
+    var id = req.params.id;
+    var body = _.pick(req.body, ['text', 'completed']);
+
+    if (!ObjectID.isValid(id)) {
+        res.status(404).send({
+            'message': 'Id not valid'
+        });
+    }
+
+    try {
+
+        if (_.isBoolean(body.completed) && body.completed) {
+            body.completedAt = new Date().getTime();
+        } else {
+            body.completed = false;
+            body.completedAt = null;
+        }
+
+        //console.log(body);
+
+        var todo = await Todo.findByIdAndUpdate(id, {
+            $set: body
+
+        }, {
+            new: true
+        });
+
+        if (!todo) {
+            return res.status(404).send();
+        }
+
+        return res.send({
+            todo
+        });
+
+    } catch (error) {
+        res.status(404).send();
     }
 
 });
