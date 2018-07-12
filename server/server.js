@@ -108,13 +108,18 @@ app.delete('/todo/:id', async (req, res) => {
         return res.status(404).send();
     }
 
-    Todo.findByIdAndRemove(id).then(doc => {
+    try {
+
+        var doc = await Todo.findByIdAndRemove(id);
 
         if (!doc) {
             return res.status(404).send();
         }
         return res.send(doc);
-    });
+
+    } catch (error) {
+        return res.status(404).send();
+    }
 
 });
 
