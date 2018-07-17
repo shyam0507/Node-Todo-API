@@ -172,6 +172,26 @@ app.patch('/todo/:id', async (req, res) => {
 
 });
 
+
+app.post('/users', async (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+
+    console.log("Body", body);
+    try {
+        var user = await new User(body).save();
+        var token = await user.generateAuthToken();
+
+        console.log("In token", token);
+
+        res.header('x-auth', token).json(user.toJSON());
+
+    } catch (error) {
+        console.log("In Error", error);
+        res.status(400).json(error);
+    }
+
+});
+
 const port = process.env.PORT;
 app.listen(port, () => {
     console.log(`Started on port ${port}`);
