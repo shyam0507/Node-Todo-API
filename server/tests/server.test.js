@@ -11,24 +11,19 @@ const {
     Todo
 } = require('./../models/todo');
 
-//Dummy todos
-const todos = [{
-    _id: new ObjectID(),
-    text: 'Todo 1'
-}, {
-    _id: new ObjectID(),
-    text: 'Todo 2',
-    completed: true
-}];
+const {
+    User
+} = require('./../models/user');
 
-beforeEach((done) => {
-    //console.log("In Before");
-    Todo.remove({}).then(() => {
-        return Todo.insertMany(todos)
-    }).then(() => {
-        done();
-    });
-});
+const {
+    todos,
+    populateTodos,
+    users,
+    populateUsers
+} = require('./seed/seed');
+
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST /todos', () => {
 
@@ -41,6 +36,7 @@ describe('POST /todos', () => {
             .send({
                 text
             })
+            .set('x-auth', users[0].tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.text).toBe(text);
@@ -70,6 +66,7 @@ describe('POST /todos', () => {
         request(app)
             .post('/todos')
             .send({})
+            .set('x-auth', users[0].tokens[0].token)
             .expect(400)
             .end((err, res) => {
                 if (err) {
@@ -93,6 +90,7 @@ describe('GET /todos', () => {
 
         request(app)
             .get('/todos')
+            .set('x-auth', users[0].tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.todos.length).toBe(2);
@@ -110,6 +108,7 @@ describe('GET /todos/:id', () => {
 
         request(app)
             .get(`/todo/${todos[0]._id.toHexString()}`)
+            .set('x-auth', users[0].tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.todo.text).toBe(todos[0].text);
@@ -123,6 +122,7 @@ describe('GET /todos/:id', () => {
         request(app)
             .get(`/todo/${new ObjectID().toHexString()}`)
             .expect(404)
+            .set('x-auth', users[0].tokens[0].token)
             .end(done);
     });
 
@@ -130,6 +130,7 @@ describe('GET /todos/:id', () => {
 
         request(app)
             .get(`/todo/123`)
+            .set('x-auth', users[0].tokens[0].token)
             .expect(404)
             .end(done);
     });
@@ -145,6 +146,7 @@ describe('DELETE /todo/:id', () => {
 
         request(app)
             .delete(`/todo/${hexId}`)
+            .set('x-auth', users[0].tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.todo._id).toBe(hexId);
@@ -169,6 +171,7 @@ describe('DELETE /todo/:id', () => {
     it('should return 404 if Todo not found', (done) => {
         request(app)
             .delete(`/todo/${new ObjectID().toHexString()}`)
+            .set('x-auth', users[0].tokens[0].token)
             .expect(404)
             .end(done);
     });
@@ -177,6 +180,7 @@ describe('DELETE /todo/:id', () => {
     it('should return 404 if Object Id invalid', (done) => {
         request(app)
             .delete(`/todo/123`)
+            .set('x-auth', users[0].tokens[0].token)
             .expect(404)
             .end(done);
     });
@@ -199,6 +203,7 @@ describe('PATCH /todo/:id', () => {
         request(app)
             .patch(`/todo/${id}`)
             .send(body)
+            .set('x-auth', users[0].tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.todo.text).toBe(body.text.toString());
@@ -221,12 +226,118 @@ describe('PATCH /todo/:id', () => {
         request(app)
             .patch(`/todo/${id}`)
             .send(body)
+            .set('x-auth', users[0].tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.todo.text).toBe(body.text.toString());
                 expect(res.body.todo.completed).toBe(false);
                 expect(res.body.todo.completedAt).toBe(null);
             }).end(done);
+
+    });
+
+
+    describe('GET /user/me', () => {
+
+        it('should return if user is authenticated', (done) => {
+            request(app)
+                .get('/users/me')
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .expect((res) => {
+                    console.log("Res Body", res.body);
+                    expect(res.body._id).toBe(users[0]._id.toHexString());
+                    expect(res.body.email).toBe(users[0].email);
+                }).end(done);
+        });
+
+
+        it('should return 401 if not authenticated', (done) => {
+
+            request(app)
+                .get('/users/me')
+                .expect(401)
+                .expect((res) => {
+                    expect(res.body).toEqual({});
+                })
+                .end(done);
+
+        });
+
+    });
+
+
+    describe('POST /users', () => {
+
+        it('should create a user', (done) => {
+
+            var email = "example@example.com";
+            var password = "123mnb!";
+
+            request(app)
+                .post('/users')
+                .send({
+                    email,
+                    password
+                })
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .expect((res) => {
+                    expect(res.headers['x-auth']).toBeTruthy();
+                    expect(res.body._id).toBeTruthy();
+                    expect(res.body.email).toBe(email);
+                }).end((err) => {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    User.findOne({
+                        email
+                    }).then(user => {
+                        expect(user).toBeTruthy();
+                        expect(user.password).not.toBe(password);
+                        done();
+                    });
+                });
+
+        });
+
+        it('should return validation error if request invalid', (done) => {
+
+            var email = "exampleexample.com";
+            var password = "123mnb!";
+
+            request(app)
+                .post('/users')
+                .send({
+                    email,
+                    password
+                })
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(400)
+                .end(done);
+
+        });
+
+        it('should should not create a user if email in use', (done) => {
+
+            var email = users[0].email;
+            var password = "123mnb!";
+
+            request(app)
+                .post('/users')
+                .send({
+                    email,
+                    password
+                })
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(400)
+                .end(done);
+
+
+        });
+
+
 
     });
 

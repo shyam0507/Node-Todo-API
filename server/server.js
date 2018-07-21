@@ -5,6 +5,10 @@ const bodyParser = require('body-parser');
 const _ = require('lodash');
 
 var {
+    authenticate
+} = require('./middleware/authenticate');
+
+var {
     ObjectID
 } = require('mongodb');
 
@@ -22,6 +26,7 @@ var {
 var app = express();
 
 app.use(bodyParser.json()); //middle ware
+app.use(authenticate);
 
 /**
  * Add a new todo
@@ -189,6 +194,28 @@ app.post('/users', async (req, res) => {
         console.log("In Error", error);
         res.status(400).json(error);
     }
+
+});
+
+
+
+app.get('/users/me', async (req, res) => {
+    //console.log("In Server", req.user);
+    res.send(req.user);
+});
+
+app.post('/users/login', async (req, res) => {
+
+    var body = _.pick(req.body, ['email', 'password']);
+
+    User.findByCredentials(body.email, body.password).then(user => {
+        return user.generateAuthToken().then((token) => {
+            res.header('x-auth', token).send(user);
+        })
+
+    }).catch(error => {
+        res.status(400).send();
+    });
 
 });
 
