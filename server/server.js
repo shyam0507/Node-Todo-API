@@ -26,13 +26,13 @@ var {
 var app = express();
 
 app.use(bodyParser.json()); //middle ware
-app.use(authenticate);
+//app.use(authenticate);
 
 /**
  * Add a new todo
  * promise method
  */
-app.post('/todos', (req, res) => {
+app.post('/todos', authenticate, (req, res) => {
     console.log(req.body);
     var todo = new Todo({
         text: req.body.text
@@ -51,7 +51,7 @@ app.post('/todos', (req, res) => {
  * Add a new todo
  * async await mechanism
  */
-app.post('/todos-async', async (req, res) => {
+app.post('/todos-async', authenticate, async (req, res) => {
     console.log(req.body);
     var todo = new Todo({
         text: req.body.text
@@ -67,7 +67,7 @@ app.post('/todos-async', async (req, res) => {
 
 });
 
-app.get('/todos', async (req, res) => {
+app.get('/todos', authenticate, async (req, res) => {
 
     try {
 
@@ -84,7 +84,7 @@ app.get('/todos', async (req, res) => {
 
 
 //get the todo by id
-app.get('/todo/:id', async (req, res) => {
+app.get('/todo/:id', authenticate, async (req, res) => {
 
     var id = req.params.id;
 
@@ -108,7 +108,7 @@ app.get('/todo/:id', async (req, res) => {
 });
 
 
-app.delete('/todo/:id', async (req, res) => {
+app.delete('/todo/:id', authenticate, async (req, res) => {
 
     var id = req.params.id;
 
@@ -199,7 +199,7 @@ app.post('/users', async (req, res) => {
 
 
 
-app.get('/users/me', async (req, res) => {
+app.get('/users/me', authenticate, async (req, res) => {
     //console.log("In Server", req.user);
     res.send(req.user);
 });
@@ -216,6 +216,16 @@ app.post('/users/login', async (req, res) => {
     }).catch(error => {
         res.status(400).send();
     });
+
+});
+
+app.delete('/users/me/token', authenticate, async (req, res) => {
+
+    req.user.removeToken(req.token).then(() => {
+        res.status(200).send();
+    }, () => {
+        res.status(400).send();
+    })
 
 });
 

@@ -280,7 +280,7 @@ describe('PATCH /todo/:id', () => {
                     email,
                     password
                 })
-                .set('x-auth', users[0].tokens[0].token)
+
                 .expect(200)
                 .expect((res) => {
                     expect(res.headers['x-auth']).toBeTruthy();
@@ -313,7 +313,6 @@ describe('PATCH /todo/:id', () => {
                     email,
                     password
                 })
-                .set('x-auth', users[0].tokens[0].token)
                 .expect(400)
                 .end(done);
 
@@ -330,15 +329,104 @@ describe('PATCH /todo/:id', () => {
                     email,
                     password
                 })
-                .set('x-auth', users[0].tokens[0].token)
                 .expect(400)
                 .end(done);
 
 
         });
 
+    });
 
+
+    describe('POST /users/login/', () => {
+
+        it('Should login user and return auth token', (done) => {
+
+            request(app)
+                .post('/users/login')
+                .send({
+                    email: users[1].email,
+                    password: users[1].password
+                })
+                .expect(200)
+                .expect((res) => {
+                    expect(res.headers['x-auth']).toBeTruthy();
+
+                }).end((err, res) => {
+
+                    if (err) {
+                        return done(err);
+                    }
+
+                    User.findById(users[1]._id).then(user => {
+
+                        expect(user.tokens[0].access).toBe('auth');
+
+                        expect(user.tokens[0].token).toBe(res.headers['x-auth']);
+
+                        done();
+
+                    }).catch(e => done(e));
+                });
+
+        });
+
+        it('should reject invalid login', (done) => {
+
+            request(app)
+                .post('/users/login')
+                .send({
+                    email: users[1].email,
+                    password: users[1].password + "Change"
+                })
+                .expect(400)
+                .expect((res) => {
+                    expect(res.headers['x-auth']).not.toBeTruthy();
+
+                }).end((err) => {
+
+                    if (err) {
+                        return done(err);
+                    }
+
+                    User.findById(users[1]._id).then(user => {
+
+                        expect(user.tokens.length).toBe(0);
+
+                        done();
+
+                    }).catch(e => done(e));
+                });
+
+
+        });
 
     });
 
+    describe('DELETE /users/me/token', () => {
+
+        it('should remove the auth token on logout', (done) => {
+
+            request(app)
+                .delete('/users/me/token')
+                .set('x-auth', users[0].tokens[0].token)
+                .expect(200)
+                .end((err) => {
+
+                    if (err) {
+                        return done(err);
+                    }
+
+                    User.findById(users[0]._id).then(user => {
+                        expect(user.tokens.length).toBe(0);
+                        done();
+                    }).catch(e => {
+                        done(e);
+                    });
+
+                });
+
+        });
+
+    });
 });
