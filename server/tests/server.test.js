@@ -168,7 +168,7 @@ describe('DELETE /todo/:id', () => {
                 }
 
                 Todo.findById(hexId).then((todo) => {
-                    expect(todo).toBe(null);
+                    expect(todo).toBeFalsy();
                     done();
                 }).catch((e) => {
                     done(e);
@@ -241,7 +241,7 @@ describe('PATCH /todo/:id', () => {
             .expect((res) => {
                 expect(res.body.todo.text).toBe(body.text.toString());
                 expect(res.body.todo.completed).toBe(true);
-                expect(res.body.todo.completedAt).toBeGreaterThan(0);
+                expect(typeof res.body.todo.completedAt).toBe('number');
             }).end(done);
 
     });
@@ -281,7 +281,7 @@ describe('PATCH /todo/:id', () => {
             .expect((res) => {
                 expect(res.body.todo.text).toBe(body.text.toString());
                 expect(res.body.todo.completed).toBe(false);
-                expect(res.body.todo.completedAt).toBe(null);
+                expect(res.body.todo.completedAt).toBeFalsy();
             }).end(done);
 
     });
@@ -412,10 +412,13 @@ describe('POST /users/login/', () => {
 
                 User.findById(users[1]._id).then(user => {
 
-                    expect(user.tokens[1].access).toBe('auth');
+                    // expect(user.tokens[1].access).toBe('auth');
+                    // expect(user.tokens[1].token).toBe(res.headers['x-auth']);
 
-                    expect(user.tokens[1].token).toBe(res.headers['x-auth']);
-
+                    expect(user.toObject().tokens[1]).toMatchObject({
+                        access: 'auth',
+                        token: res.headers['x-auth']
+                    });
                     done();
 
                 }).catch(e => done(e));
@@ -433,7 +436,7 @@ describe('POST /users/login/', () => {
             })
             .expect(400)
             .expect((res) => {
-                expect(res.headers['x-auth']).not.toBeTruthy();
+                expect(res.headers['x-auth']).toBeFalsy();
 
             }).end((err) => {
 
