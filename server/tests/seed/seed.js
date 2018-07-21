@@ -25,29 +25,41 @@ const users = [{
         token: jwt.sign({
             _id: userOneId,
             access: 'auth'
-        }, 'abc123').toString()
+        },  process.env.JWT_SECRET).toString()
     }]
 
 }, {
     _id: userTwoId,
     email: 'nuevothoughts.shyam@gmail.com',
     password: 'userTwoPass',
+    tokens: [{
+        access: 'auth',
+        token: jwt.sign({
+            _id: userTwoId,
+            access: 'auth'
+        },  process.env.JWT_SECRET).toString()
+    }]
 }];
 
 //Dummy todos
 const todos = [{
     _id: new ObjectID(),
-    text: 'Todo 1'
+    text: 'Todo 1',
+    completed: true,
+    completedAt: 330,
+    _creator: userOneId
 }, {
     _id: new ObjectID(),
     text: 'Todo 2',
-    completed: true
+    completed: true,
+    completedAt: 330,
+    _creator: userTwoId
 }];
 
 const populateTodos = (done) => {
     //console.log("In Before");
     Todo.remove({}).then(() => {
-        return Todo.insertMany(todos)
+        return Todo.insertMany(todos);
     }).then(() => {
         done();
     });
@@ -72,4 +84,4 @@ module.exports = {
     populateTodos,
     users,
     populateUsers
-}
+};

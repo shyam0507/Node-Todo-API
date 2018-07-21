@@ -30,31 +30,13 @@ app.use(bodyParser.json()); //middle ware
 
 /**
  * Add a new todo
- * promise method
- */
-app.post('/todos', authenticate, (req, res) => {
-    console.log(req.body);
-    var todo = new Todo({
-        text: req.body.text
-    });
-
-    todo.save().then(doc => {
-        res.send(doc);
-    }, (e) => {
-        res.status(400).send(e);
-    });
-
-});
-
-
-/**
- * Add a new todo
  * async await mechanism
  */
-app.post('/todos-async', authenticate, async (req, res) => {
+app.post('/todos', authenticate, async (req, res) => {
     console.log(req.body);
     var todo = new Todo({
-        text: req.body.text
+        text: req.body.text,
+        _creator: req.user._id
     });
 
     try {
@@ -64,14 +46,14 @@ app.post('/todos-async', authenticate, async (req, res) => {
         res.status(400).send(error);
     }
 
-
 });
 
 app.get('/todos', authenticate, async (req, res) => {
 
     try {
-
-        var todos = await Todo.find();
+        var todos = await Todo.find({
+            _creator: req.user._id
+        });
         res.send({
             todos
         });
@@ -94,7 +76,10 @@ app.get('/todo/:id', authenticate, async (req, res) => {
     }
 
     try {
-        var todo = await Todo.findById(id);
+        var todo = await Todo.findOne({
+            _id: id,
+            _creator: req.user._id
+        });
         if (!todo) {
             return res.status(404).send('Todo not found');
         }
@@ -118,7 +103,10 @@ app.delete('/todo/:id', authenticate, async (req, res) => {
 
     try {
 
-        var todo = await Todo.findByIdAndRemove(id);
+        var todo = await Todo.findOneAndRemove({
+            _id: id,
+            _creator: req.user._id
+        });
 
         if (!todo) {
             return res.status(404).send();
@@ -134,7 +122,7 @@ app.delete('/todo/:id', authenticate, async (req, res) => {
 });
 
 //Update the Todo
-app.patch('/todo/:id', async (req, res) => {
+app.patch('/todo/:id', authenticate, async (req, res) => {
 
     var id = req.params.id;
     var body = _.pick(req.body, ['text', 'completed']);
@@ -156,7 +144,10 @@ app.patch('/todo/:id', async (req, res) => {
 
         //console.log(body);
 
-        var todo = await Todo.findByIdAndUpdate(id, {
+        var todo = await Todo.findOneAndUpdate({
+            _id: id,
+            _creator: req.user._id
+        }, {
             $set: body
 
         }, {
